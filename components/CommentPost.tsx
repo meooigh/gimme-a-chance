@@ -11,7 +11,7 @@ type props = NativeStackScreenProps<HomeStackParamList, 'commentScreen'>;
 
 const CommentPost = ({route, navigation} : props) => {
   const {state, dispatch} = React.useContext(context);
-  const [comment, setComment] = React.useState<string>('');
+  const [comment, setComment] = React.useState<string>('')
 
   
   const handleComment = async() =>{

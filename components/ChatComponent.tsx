@@ -144,6 +144,9 @@ const sendMessage = () => {
     messageID: Math.random() 
   };
   SocketClient.emit('send-message', newMessage);
+  return () =>{
+    SocketClient.emit('user-disconnect', {reason: 'a user left the room.'})
+  }
 }
 
   return (
