@@ -1,4 +1,5 @@
 var mysql = require('mysql2/promise');
+const {spawn} = require('child_process');
 
 const pool =  mysql.createPool({
     host: '127.0.0.2',
@@ -256,6 +257,7 @@ const getListChatFriend = async(req, res, next) =>{
          connection.release();
      }
 };
+
 const saveMessage = async(req, res, next) =>{
     const {data} = req.body;
     const connection = await pool.getConnection();
@@ -281,7 +283,25 @@ const saveMessage = async(req, res, next) =>{
             connection.release();
         }
     }
+};
+
+const getImageValidation = async(req, res, next) =>{
+    const ImageValidation = req.body.imageValidation;
+
+    console.log(ImageValidation.data)
+
+    const pythonProcess = spawn('python', ['D:\\project\\facial_recognition\\predict_face.py']);
+    
+    pythonProcess.stdin.write(JSON.stringify(ImageValidation.data));
+    pythonProcess.stdin.end();
+
+    pythonProcess.stdout.on('data', (data) => {
+        const result = JSON.parse(data);
+        console.log(result);
+    });
+
 }
+
 module.exports ={
     register,
     getAccount,
@@ -293,5 +313,6 @@ module.exports ={
     commentPost,
     getCommentPost,
     getListChatFriend,
-    saveMessage
+    saveMessage,
+    getImageValidation
 }

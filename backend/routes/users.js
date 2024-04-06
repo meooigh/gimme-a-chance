@@ -1,5 +1,15 @@
 var express = require('express');
-const { register, getAccount, createPost, getAllAccounts, addNewFriend, getAllPosts, commentPost, getCommentPost, getListChatFriend, saveMessage } = require('../controllers/controllers');
+const { register, 
+        getAccount, 
+        createPost, 
+        getAllAccounts, 
+        addNewFriend, 
+        getAllPosts, 
+        commentPost, 
+        getCommentPost, 
+        getListChatFriend, 
+        saveMessage, 
+        getImageValidation } = require('../controllers/controllers');
 var router = express.Router();
 
 // Đăng kí
@@ -22,4 +32,6 @@ router.post('/getCommentOfPost', getCommentPost);
 router.post('/getListChatFriend', getListChatFriend);
 // save chat
 router.post('/saveChat', saveMessage);
+// Image validation
+router.post('/getImageValidation', getImageValidation)
 module.exports = router;
