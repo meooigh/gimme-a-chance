@@ -4,12 +4,15 @@ import {
   ImageBackground,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import React from 'react';
 import {
   UserIcon,
   LockClosedIcon,
   CameraIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from 'react-native-heroicons/solid';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../navigation/Navigation';
@@ -22,7 +25,7 @@ type props = NativeStackScreenProps<RootStackParamList, 'LoginScreen'>;
 
 const LoginScreen = ({navigation}: props) => {
   const {state, dispatch} = React.useContext(context);
-
+  const [hide, setHide] = React.useState<boolean>(true);
   const handleLogin = async () => {
     try {
       const response = await fetch(`http://${BASE_URL}:3000/users/auth/login`, {
@@ -51,7 +54,12 @@ const LoginScreen = ({navigation}: props) => {
           },
         });
       } else {
-        console.log(result.message);
+        Alert.alert('Notification', result.message, [
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -78,6 +86,7 @@ const LoginScreen = ({navigation}: props) => {
               <TextInput
                 onChangeText={text => dispatch(getUsername(text))}
                 className="w-5/6 h-18 text-white"
+                textContentType="username"
               />
             </View>
           </View>
@@ -88,7 +97,18 @@ const LoginScreen = ({navigation}: props) => {
               <TextInput
                 onChangeText={text => dispatch(getPassword(text))}
                 className="w-5/6 h-18 text-white"
+                textContentType="password"
+                secureTextEntry={hide}
               />
+              {hide ? (
+                <TouchableOpacity onPress={() => setHide(!hide)}>
+                  <EyeIcon size={30} color="yellow" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => setHide(!hide)}>
+                  <EyeSlashIcon size={30} color="yellow" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>

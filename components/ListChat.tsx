@@ -86,7 +86,7 @@ const ListChat = ({route, navigation}: props) => {
       <View className="my-2 ml-2">
         <Text className="text-2xl font-bold">Đoạn chat</Text>
       </View>
-      <View className="bg-gray-300 rounded-full flex-row items-center mb-3">
+      <View className="bg-gray-300 rounded-full flex-row items-center mb-3 w-11/12 ml-4 px-4">
         <MagnifyingGlassIcon className="mx-2" size={30} color="black" />
         <TextInput placeholder="Tìm kiếm chat box" />
       </View>

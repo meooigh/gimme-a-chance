@@ -21,19 +21,21 @@ const SearchList = ({navigation, route}: props) => {
   const [textFindUser, setTextFindUser] = React.useState<string>('');
 
   const getUserInfor = async () => {
-    const response = await fetch(
-      `http://${BASE_URL}:3000/users/getAllAccounts?page=${page}`,
-    );
-    const result = await response.json();
-    setUsers(result.data);
-    setPage(prePage => prePage + 1);
+    try {
+      const response = await fetch(
+        `http://${BASE_URL}:3000/users/getAllAccounts?page=${page}`,
+      );
+      const result = await response.json();
+      setUsers(result.data);
+      setPage(prePage => prePage + 1);
+    } catch (error) {
+      console.error('Error fetching user information:', error);
+    }
   };
 
-  const filterUsers = React.useCallback(
-    (user: any) => user.NameOfUser.includes(textFindUser),
-    [textFindUser],
+  const userLookingFor = users.filter(item =>
+    item.NameOfUser.toLowerCase().includes(textFindUser.toLowerCase()),
   );
-  const userLookingFor = users.filter(filterUsers);
 
   const handleAddNewFriend = async (itemID: number) => {
     try {
@@ -72,7 +74,6 @@ const SearchList = ({navigation, route}: props) => {
   React.useEffect(() => {
     getUserInfor();
   }, []);
-
   return (
     <View>
       <View className="mt-1 mb-3 flex-row items-center justify-around">
@@ -111,7 +112,7 @@ const SearchList = ({navigation, route}: props) => {
               </View>
             </View>
           )}
-          keyExtractor={item => item.PersonID}
+          keyExtractor={item => item.AccountID.toString()} // Ensure key is unique
           onEndReachedThreshold={0.3}
           onEndReached={() => getUserInfor()}
         />

@@ -1,0 +1,13 @@
+[ 
+  { 
+    "relation": ["delegate_permission/common.handle_all_urls"], 
+    "target": { 
+      "namespace": "android_app", 
+      "package_name": "com.badass", 
+      "sha256_cert_fingerprints": [
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C",
+        "FB:DD:AE:34:0F:7A:60:0B:07:34:90:84:63:B2:7F:27:AF:B8:C9:42:1D:FE:F5:2D:38:50:FE:17:AD:44:05:2B"
+    ] 
+    } 
+  } 
+] 

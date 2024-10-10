@@ -131,18 +131,18 @@ const CommentPost = ({route, navigation}: props) => {
               </View>
             )}
           />
-          <View className="justify-between w-full flex-row items-center absolute bottom-4">
-            <TextInput
-              onChangeText={text => setComment(text)}
-              className="w-5/6 h-10 rounded-full text-black border"
-              placeholder="hi"
-            />
-            <TouchableOpacity onPress={() => handleComment()} className="mr-2">
-              <PaperAirplaneIcon size={26} color="black" />
-            </TouchableOpacity>
-          </View>
         </>
       )}
+      <View className="justify-between w-full flex-row items-center absolute bottom-4">
+        <TextInput
+          onChangeText={text => setComment(text)}
+          className="w-5/6 h-10 rounded-full text-black border"
+          placeholder="hi"
+        />
+        <TouchableOpacity onPress={() => handleComment()} className="mr-2">
+          <PaperAirplaneIcon size={26} color="black" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };

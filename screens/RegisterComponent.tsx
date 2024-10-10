@@ -42,9 +42,20 @@ const RegisterComponent = ({navigation}: props) => {
           style: 'cancel',
         },
       ]);
+    } else {
+      Alert.alert('Alert', result.message, [
+        // {
+        //   text: 'Login now',
+        //   onPress: () => navigation.navigate('LoginScreen'),
+        // },
+        {
+          text: 'OK',
+          style: 'cancel',
+        },
+      ]);
     }
   };
-
+  // console.log("sdaf", state.registerState.UserName.trim())
   return (
     <View className="justify-center">
       <View className="my-4">
@@ -71,6 +82,7 @@ const RegisterComponent = ({navigation}: props) => {
             onChangeText={text => dispatch(getRegisterState({email: text}))}
             className="w-11/12 h-11 border rounded-sm"
             placeholder="Enter your email"
+            textContentType="emailAddress"
           />
         </View>
         <View className="flex-row items-center justify-around my-4">

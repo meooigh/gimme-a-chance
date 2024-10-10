@@ -18,25 +18,57 @@ const register = async function (req, res, next) {
 
   const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
+    if (
+      UserName.trim().length === 0 &&
+      Password.trim().length === 0 &&
+      name.trim().length === 0
+    ) {
+      await res.send({
+        success: true,
+        message: 'Tài khoản, mật khẩu hoặc tên không được để trống.',
+      });
+    } else {
+      await connection.beginTransaction();
+      const [existingFriendship] = await connection.query(
+        'SELECT * FROM Accounts WHERE UserName = ?',
+        [UserName],
+      );
+      if (existingFriendship.length > 0) {
+        await res.send({
+          success: false,
+          message: 'Tài khoản đã tồn tại.',
+        });
+      } else {
+        const [personInfor] = await connection.execute(
+          'INSERT INTO Persons(NameOfUser, DateOfBirth, Email) VALUES(?, ?, ?)',
+          [name, date, email],
+        );
 
-    const [personInfor] = await connection.execute(
-      'INSERT INTO Persons(NameOfUser, DateOfBirth, Email) VALUES(?, ?, ?)',
-      [name, date, email],
-    );
+        const personID = personInfor.insertId;
 
-    const personID = personInfor.insertId;
+        const [accountInfor] = await connection.execute(
+          'INSERT INTO Accounts(UserName, Password, PersonID, NickName) VALUES(?, ?, ?, ?)',
+          [UserName, Password, personID, name],
+        );
+        const accountID = accountInfor.insertId;
+        await connection.query(
+          'INSERT INTO Friends(UserID, FriendID) VALUES(?, ?)',
+          [accountID, accountID],
+        );
+        await connection.commit();
 
-    await connection.execute(
-      'INSERT INTO Accounts(UserName, Password, PersonID, NickName) VALUES(?, ?, ?, ?)',
-      [UserName, Password, personID, name],
-    );
-
-    await connection.commit();
-
-    await res.send({success: true, message: 'your account has been created.'});
+        await res.send({
+          success: true,
+          message: 'your account has been created.',
+        });
+      }
+    }
   } catch (error) {
     await connection.rollback();
+    await res.send({
+      success: true,
+      message: 'Cần nhập đúng định dạng thời gian.',
+    });
     throw error;
   } finally {
     if (connection) {
@@ -64,7 +96,7 @@ const getAccount = async function (req, res, next) {
         data: results[0],
       });
     } else {
-      res.send({success: false, message: 'Invalid username or password'});
+      res.send({success: false, message: 'Sai tài khoản hoặc mật khẩu'});
     }
 
     await connection.commit();
@@ -87,12 +119,16 @@ const createPost = async function (req, res, next) {
 
   const connection = await pool.getConnection();
   try {
-    await connection.query(
-      'INSERT INTO Posts(Title, Image, LikesOfPost, CommentsOfPost, TimeOfPost, Author) VALUES(?, ?, ?, ?, ?, ?)',
-      [Title, Image.path, 0, 0, TimeOfPost, Author],
-    );
+    if (Title.trim().length === 0 && Image.length == 0) {
+      res.send({success: true, message: 'Cần nhập tiêu đề hoặc tải ảnh.'});
+    } else {
+      await connection.query(
+        'INSERT INTO Posts(Title, Image, LikesOfPost, CommentsOfPost, TimeOfPost, Author) VALUES(?, ?, ?, ?, ?, ?)',
+        [Title, Image.path, 0, 0, TimeOfPost, Author],
+      );
 
-    res.send({success: true, message: 'You posted.'});
+      res.send({success: true, message: 'You posted.'});
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({success: false, message: 'Internal server error'});
@@ -147,9 +183,9 @@ const addNewFriend = async function (req, res, next) {
       );
 
       if (results.affectedRows > 0) {
-        res.send({success: true, message: 'You added a new friend.'});
+        res.send({success: true, message: 'There is something wrong!'});
       } else {
-        res.send({success: false, message: 'There is something wrong!'});
+        res.send({success: true, message: 'You added a new friend.'});
       }
     }
   } catch (error) {
@@ -292,6 +328,34 @@ const getListChatFriend = async (req, res, next) => {
     connection.release();
   }
 };
+const getListChatHistory = async (req, res, next) => {
+  const UserID = req.body.UserID;
+  const PartnerID = req.body.PartnerID;
+  const connection = await pool.getConnection();
+
+  try {
+    const [result] = await connection.query('CALL get_all_chat_history(?, ?)', [
+      UserID,
+      PartnerID,
+    ]);
+    console.log('dagsad', result);
+    if (result.length > 0) {
+      res.send({
+        success: true,
+        message: 'Get all chat history successfully!',
+        data: result[0],
+      });
+    } else {
+      res.send({success: false, message: 'Get all chat history wrong!'});
+    }
+  } catch (error) {
+    console.log(error);
+    await connection.rollback();
+    res.status(500).json({success: false, message: 'Internal server error '});
+  } finally {
+    connection.release();
+  }
+};
 
 const saveMessage = async (req, res, next) => {
   const {data} = req.body;
@@ -355,4 +419,5 @@ module.exports = {
   getListChatFriend,
   saveMessage,
   getImageValidation,
+  getListChatHistory,
 };

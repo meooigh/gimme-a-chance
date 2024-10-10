@@ -28,26 +28,34 @@ app.set('port', port);
  * Create HTTP server.
  */
 var server = http.createServer(app);
-var io = new Server(server);
+var io = new Server(server, {
+  pingTimeout: 60000, // 60 seconds
+  pingInterval: 25000,
+});
 /**
  * Listen on provided port, on all network interfaces.
  */
 
 io.on('connection', socket => {
-  console.log('a user connected');
+  console.log('A user connected');
 
   // Extract user IDs (or peer IDs) from the handshake query
   const {idAccount, ToAccountID} = socket.handshake.query;
 
-  // Generate a room name based on the two accounts, same as the chat room
+  // Generate a room name based on the two accounts, similar to the chat room
   const roomName = `call_${Math.min(idAccount, ToAccountID)}_${Math.max(
     idAccount,
     ToAccountID,
   )}`;
+  console.log('Room Name:', roomName);
 
-  // The user joins a room for signaling
+  // The user joins the room for signaling
   socket.join(roomName);
+  console.log('Socket ID:', socket.id);
+
+  // Notify the other peer in the room that a user has connected
   socket.to(roomName).emit('user-connected', socket.id);
+
   // Handle incoming WebRTC offer from one peer
   socket.on('offer', offer => {
     console.log('Offer received:', offer);
@@ -63,24 +71,49 @@ io.on('connection', socket => {
   });
 
   // Handle ICE candidates (peer-to-peer network connectivity information)
-  socket.on('ice-candidate', candidate => {
+  socket.on('icecandidate', candidate => {
     console.log('ICE Candidate received:', candidate);
-    // Broadcast the ICE candidate to the other peer
-    socket.to(roomName).emit('ice-candidate', candidate);
+    // Broadcast the ICE candidate to the other peer in the room
+    socket.to(roomName).emit('icecandidate', candidate);
   });
 
-  // Handle disconnection
-  socket.on('user-disconnect', data => {
-    socket.leave(roomName); // Leave the room
-    socket.disconnect(true); // Disconnect the socket
-    console.log('User disconnected:', data.reason);
+  // Handle disconnection (both manual and automatic disconnection)
+  socket.on('disconnect', reason => {
+    console.log(`User disconnected: ${reason}`);
+    // Notify the other peer in the room that this user disconnected
+    socket.to(roomName).emit('user-disconnected', socket.id);
+    socket.leave(roomName); // Leave the room on disconnection
   });
 
-  // You can keep your chat-related logic here as well
-  socket.on('send-message', data => {
+  // Chat-related logic can remain here if needed
+  socket.on('send-message', async data => {
     // Broadcast the chat message to the room
     socket.to(roomName).emit('received-message', data);
-    console.log('Chat message:', data);
+    const connection = await pool.getConnection();
+    console.log('-_-', data);
+    try {
+      await connection.beginTransaction();
+      const [chatContent] = await connection.query(
+        'INSERT INTO ChatContent(ContentOfChat) VALUES(?)',
+        [data.message],
+      );
+      const ChatContentID = chatContent.insertId;
+      await connection.query(
+        'INSERT INTO ChatContentSend(AccountID, ChatContentID, ToAccountID) VALUES(?, ?, ?)',
+        [data.idAccount, ChatContentID, data.ToAccountID],
+      );
+
+      console.log('Messages saved successfully.');
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      console.error(error);
+      res.status(500).json({success: false, message: 'Internal server error'});
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
   });
 });
 

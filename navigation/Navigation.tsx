@@ -91,11 +91,19 @@ const HomeStackParam = () => {
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
+const linking = {
+  prefixes: ['http://192.168.61.187:3000'],
+  config: {
+    screens: {
+      Home: 'Home/:postID',
+    },
+  },
+};
 
 const Navigation = () => {
   return (
     <Provider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <RootStack.Navigator
           initialRouteName="LoginScreen"
           screenOptions={{

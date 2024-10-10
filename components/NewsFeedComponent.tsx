@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Share,
 } from 'react-native';
 import React from 'react';
 import {
@@ -15,14 +16,37 @@ import {
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {HomeStackParamList} from '../navigation/Navigation';
 import {useNavigation} from '@react-navigation/native';
+import {BASE_URL} from '../App';
 
 const {height, width} = Dimensions.get('window');
 type propsNavigation = NativeStackScreenProps<
   HomeStackParamList,
   'NewsFeedComponent'
 >;
+
 const NewsFeedComponent = (props: any) => {
   const navigation = useNavigation<propsNavigation>();
+  const [isLike, setIsLike] = React.useState<boolean>(false);
+  const handleShare = async () => {
+    try {
+      const result = await Share.share({
+        message: `http://${BASE_URL}:3000`,
+        url: `http://${BASE_URL}:3000`, // Optional: Add URL if needed
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type: ', result.activityType);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing content:', error.message);
+    }
+  };
   return (
     <View className="my-2 bg-white">
       {/* header */}
@@ -48,24 +72,33 @@ const NewsFeedComponent = (props: any) => {
         </View>
       </View>
       {/* body */}
-      <View>
-        <TouchableOpacity className="border">
-          <Image
-            source={{
-              uri: props.image,
-            }}
-            style={{
-              resizeMode: 'cover',
-              height: height / 2,
-              width: width,
-            }}
-          />
-        </TouchableOpacity>
-      </View>
+      {props.image ? (
+        <View>
+          <TouchableOpacity className="border">
+            <Image
+              source={{
+                uri: props.image,
+              }}
+              style={{
+                resizeMode: 'cover',
+                height: height / 2,
+                width: width,
+              }}
+            />
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {/* foot */}
       <View className="w-full flex-row justify-between p-2 border">
-        <TouchableOpacity className="flex-row items-center ">
-          <HandThumbUpIcon size={30} color="black" />
+        <TouchableOpacity
+          onPress={() => setIsLike(!isLike)}
+          className="flex-row items-center ">
+          {isLike ? (
+            <HandThumbUpIcon size={30} color="red" />
+          ) : (
+            <HandThumbUpIcon size={30} color="black" />
+          )}
+
           <Text className="text-base mx-1">Like</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -80,7 +113,9 @@ const NewsFeedComponent = (props: any) => {
           <ChatBubbleBottomCenterTextIcon size={30} color="black" />
           <Text className="text-base mx-1">Comment</Text>
         </TouchableOpacity>
-        <TouchableOpacity className="flex-row items-center ">
+        <TouchableOpacity
+          onPress={handleShare}
+          className="flex-row items-center ">
           <ShareIcon size={30} color="black" />
           <Text className="text-base mx-1">Share</Text>
         </TouchableOpacity>

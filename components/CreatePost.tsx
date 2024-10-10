@@ -16,7 +16,7 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {HomeStackParamList} from '../navigation/Navigation';
 import ImagePicker from 'react-native-image-crop-picker';
 import {context} from '../globalState/Provider';
-import {getCreatePostState} from '../globalState/action';
+import {getAllPosts, getCreatePostState} from '../globalState/action';
 import {BASE_URL} from '../App';
 // import {BASE_URL} from '../socket/SocketClient';
 
@@ -30,9 +30,14 @@ const CreatePost = ({navigation, route}: props) => {
       width: 300,
       height: 400,
       cropping: true,
-    }).then(image => {
-      dispatch(getCreatePostState({Image: image}));
-    });
+    })
+      .then(image => {
+        console.log('Selected image:', image);
+        dispatch(getCreatePostState({Image: image}));
+      })
+      .catch(error => {
+        console.error('Image picker error:', error);
+      });
   };
 
   const handleCreatePost = async () => {
@@ -70,7 +75,7 @@ const CreatePost = ({navigation, route}: props) => {
       ]);
     }
   };
-
+  console.log('-_-', state.createPostState.Image.path);
   return (
     <View className="my-2">
       <View className="flex-row justify-between border-b border-gray-400 my-1 items-center">
@@ -107,9 +112,14 @@ const CreatePost = ({navigation, route}: props) => {
       <View className="my-3 h-3/5 w-full border-b border-gray-400">
         <TextInput
           onChangeText={text => dispatch(getCreatePostState({Title: text}))}
-          className="w-full h-3/5"
+          className="w-full h-1/5"
           placeholder="whats on your mind"
           style={{textAlignVertical: 'top'}}
+        />
+        <Image
+          source={{uri: state.createPostState.Image?.path}}
+          className="h-4/5 w-full"
+          resizeMode="cover"
         />
       </View>
       <View>

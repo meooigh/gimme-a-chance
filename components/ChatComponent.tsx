@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  Platform,
 } from 'react-native';
 import React from 'react';
 import {
@@ -24,40 +25,41 @@ import {
 } from '../navigation/Navigation';
 import {context} from '../globalState/Provider';
 import {BASE_URL} from '../App';
-
-export interface typeOfData {
-  ChatContentSendID: number;
+import {v4 as uuidv4} from 'uuid';
+export interface typeOfChatHistory {
+  ChatContentID: number;
+  ContentOfChat: number;
   AccountID: number;
-  ChatContent: string;
-  ToAccountID: number;
+  // ChatContent: string;
+  // ToAccountID: number;
 }
-const data: typeOfData[] = [
-  {
-    ChatContentSendID: 1,
-    AccountID: 3,
-    ChatContent: 'hello, my name is Trung',
-    ToAccountID: 4,
-  },
-  {
-    ChatContentSendID: 2,
-    AccountID: 4,
-    ChatContent: 'hi',
-    ToAccountID: 3,
-  },
-  {
-    ChatContentSendID: 6,
-    AccountID: 3,
-    ChatContent: 'wanna be friend',
-    ToAccountID: 4,
-  },
-  {
-    ChatContentSendID: 4,
-    AccountID: 4,
-    ChatContent: 'yehh',
-    ToAccountID: 3,
-  },
-];
-type chatHistory = {
+// const data: typeOfData[] = [
+//   {
+//     ChatContentSendID: 1,
+//     AccountID: 3,
+//     ChatContent: 'hello, my name is Trung',
+//     ToAccountID: 4,
+//   },
+//   {
+//     ChatContentSendID: 2,
+//     AccountID: 4,
+//     ChatContent: 'hi',
+//     ToAccountID: 3,
+//   },
+//   {
+//     ChatContentSendID: 6,
+//     AccountID: 3,
+//     ChatContent: 'wanna be friend',
+//     ToAccountID: 4,
+//   },
+//   {
+//     ChatContentSendID: 4,
+//     AccountID: 4,
+//     ChatContent: 'yehh',
+//     ToAccountID: 3,
+//   },
+// ];
+type chatText = {
   messageID: number;
   idAccount: number;
   ToAccountID: number;
@@ -66,15 +68,55 @@ type chatHistory = {
 type props = NativeStackScreenProps<ChatStackParamList, 'ChatScreen'>;
 const ChatComponent = ({route, navigation}: props) => {
   const [message, setMessage] = React.useState<string>();
-  const [receivedMessage, setReceivedMessage] = React.useState<
-    Array<chatHistory>
-  >([]);
+  const [receivedMessage, setReceivedMessage] = React.useState<Array<chatText>>(
+    [],
+  );
   // const {state, dispatch} = React.useContext(context);
-
+  const [chatHistory, setChatHistory] = React.useState<
+    Array<typeOfChatHistory>
+  >([]);
   const idAccount = route.params.idAccount;
   const ToAccountID = route.params.ToAccountID;
-  const getChatHistory = () => {};
-  const renderChatText = (item: typeOfData) => {
+
+  React.useEffect(() => {
+    getChatHistory();
+  }, []);
+  const getChatHistory = async () => {
+    try {
+      // console.log('Data being sent: ', receivedMessage); // Log data to verify
+      const response = await fetch(
+        `http://${BASE_URL}:3000/users/getAllChatHistory`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            UserID: idAccount,
+            PartnerID: ToAccountID,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        console.error(`HTTP error! Status: ${response.status}`);
+        return;
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setChatHistory(result.data);
+      } else {
+        console.log(result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+  console.log('alo', chatHistory);
+  const renderChatText = (item: typeOfChatHistory) => {
+    // console.log('dasg', item);
     const sendByMe = item.AccountID == idAccount ? true : false;
 
     switch (sendByMe) {
@@ -82,7 +124,7 @@ const ChatComponent = ({route, navigation}: props) => {
         return (
           <View className="items-end mx-2">
             <View className="bg-blue-600 rounded-full p-2">
-              <Text className="text-white text-base">{item.ChatContent}</Text>
+              <Text className="text-white text-base">{item.ContentOfChat}</Text>
             </View>
           </View>
         );
@@ -99,7 +141,7 @@ const ChatComponent = ({route, navigation}: props) => {
               />
             </View>
             <View className="bg-blue-500 justify-center p-2 rounded-full">
-              <Text className="text-white text-base">{item.ChatContent}</Text>
+              <Text className="text-white text-base">{item.ContentOfChat}</Text>
             </View>
           </View>
         );
@@ -109,7 +151,7 @@ const ChatComponent = ({route, navigation}: props) => {
     }
   };
 
-  const renderChatMessage = (item: chatHistory) => {
+  const renderChatMessage = (item: chatText) => {
     const sendByMe = item.messageID == idAccount ? true : false;
 
     switch (sendByMe) {
@@ -181,37 +223,53 @@ const ChatComponent = ({route, navigation}: props) => {
       },
     });
 
-    SocketClient.on('received-message', (data: chatHistory) => {
+    SocketClient.on('received-message', (data: chatText) => {
       setReceivedMessage(prevMessages => [...prevMessages, data]);
+      setChatHistory(prevMessages => [
+        ...prevMessages,
+        {
+          ChatContentID: data.messageID,
+          ContentOfChat: data.message,
+          AccountID: data.idAccount,
+        },
+      ]);
     });
     return () => {
       SocketClient.emit('user-disconnect', {reason: 'a user left the room.'});
     };
   }, []);
-  console.log('dagasgd', receivedMessage);
+  // console.log('receivedMessage: ', uuidv4());
   const sendMessage = () => {
     const newMessage = {
       idAccount: idAccount,
       ToAccountID: ToAccountID,
       message: message,
-      messageID: Math.random(),
+      messageID: Date.now() + Math.floor(Math.random() * 100000000),
     };
     SocketClient.emit('send-message', newMessage);
+    setChatHistory(prevMessages => [
+      ...prevMessages,
+      {
+        ChatContentID: newMessage.messageID,
+        ContentOfChat: newMessage.message,
+        AccountID: newMessage.idAccount,
+      },
+    ]);
     setMessage('');
     // Keyboard.dismiss();
   };
-  console.log('daga', receivedMessage);
+  // console.log('daga', receivedMessage);
   return (
-    <TouchableWithoutFeedback
-      className="flex-1 bg-white"
-      onPress={() => Keyboard.dismiss()}>
-      <View className="flex-1">
+    <KeyboardAvoidingView style={{flex: 1}}>
+      {/* <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> */}
+      <View style={{flex: 1}}>
+        {/* Header */}
         <View className="flex-row justify-between p-1 shadow shadow-neutral-950">
           <View className="flex-row items-center">
             <TouchableOpacity
               onPress={() => {
                 navigation.goBack();
-                saveChatHistory();
+                // saveChatHistory();
               }}>
               <ArrowUturnLeftIcon size={30} color="black" />
             </TouchableOpacity>
@@ -234,7 +292,6 @@ const ChatComponent = ({route, navigation}: props) => {
           </View>
           <View className="flex-row items-center mx-2">
             <TouchableOpacity
-              className=""
               onPress={() =>
                 navigation.navigate('CallVideo', {
                   idAccount: idAccount,
@@ -245,45 +302,31 @@ const ChatComponent = ({route, navigation}: props) => {
             </TouchableOpacity>
           </View>
         </View>
-        {/* render chat history */}
-        {/* <View>
+
+        {/* Chat History */}
+        <View style={{flex: 1, zIndex: 1000}}>
           <FlatList
-            data={data}
-            renderItem={({item}) => (
-              <View key={item.ChatContentSendID}>{renderChatText(item)}</View>
-            )}
-            keyExtractor={item => item.ChatContentSendID.toString()}
-          />
-        </View> */}
-        {/* render chat message */}
-        <View className="flex-1 mb-12">
-          <FlatList
-            data={receivedMessage}
-            renderItem={({item}) => (
-              <View key={item.messageID}>{renderChatMessage(item)}</View>
-            )}
-            keyExtractor={item => item.messageID.toString()}
+            data={chatHistory}
+            renderItem={({item}) => renderChatText(item)}
+            keyExtractor={item => item.ChatContentID.toString()}
           />
         </View>
-        {/* text input */}
-        <View className="justify-between w-full flex-row items-center absolute bottom-4 px-1">
+
+        {/* Input */}
+        <View className="h-10 justify-between flex-row items-center bottom-4 px-1">
           <TextInput
             onChangeText={text => setMessage(text)}
             className="w-5/6 h-10 rounded-full text-black border"
-            placeholder="hi"
+            placeholder="Type a message"
             value={message}
           />
-          <TouchableOpacity
-            style={{height: 30, width: 30, zIndex: 1}}
-            onPress={() => {
-              sendMessage();
-            }}
-            className="mr-2">
+          <TouchableOpacity onPress={sendMessage} className="mr-2">
             <PaperAirplaneIcon size={30} color="black" />
           </TouchableOpacity>
         </View>
       </View>
-    </TouchableWithoutFeedback>
+      {/* </TouchableWithoutFeedback> */}
+    </KeyboardAvoidingView>
   );
 };
 export default ChatComponent;
